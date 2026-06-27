@@ -1,0 +1,25 @@
+# ===== Backend =====
+gymlog-backend/target/
+gymlog-backend/*.iml
+gymlog-backend/.mvn/
+gymlog-backend/mvnw
+gymlog-backend/mvnw.cmd
+
+# ===== Frontend =====
+gymlog-frontend/node_modules/
+gymlog-frontend/dist/
+gymlog-frontend/.env.local
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
