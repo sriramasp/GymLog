@@ -232,6 +232,41 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Last week workouts */}
+      <div className="card p-6 animate-slide-up">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-surface-900 dark:text-white">Last Week's Workout Splits</h3>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Tap a split to see exercise variations, sets, reps and weights.</p>
+          </div>
+          <Link to="/workouts" className="text-sm text-primary-500 hover:text-primary-600 font-medium transition-colors">View all workouts</Link>
+        </div>
+
+        {data.recentWorkouts?.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {data.recentWorkouts.map((w) => (
+              <Link to={`/workouts/${w.id}`} key={w.id} className="card p-4 hover:shadow-lg transition-all border border-surface-200 dark:border-surface-700">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm text-surface-500">{new Date(w.workoutDate).toLocaleDateString()}</p>
+                    <h4 className="font-semibold text-surface-900 dark:text-white">{w.name}</h4>
+                  </div>
+                  <span className="badge-info">{w.status}</span>
+                </div>
+                <p className="text-sm text-surface-500 mb-3">{w.exercises?.slice(0, 3).map((ex) => ex.exerciseName).join(' · ')}</p>
+                <div className="flex items-center gap-3 text-sm text-surface-600 dark:text-surface-400">
+                  <span>{w.totalExercises} exercises</span>
+                  <span>{w.totalSets} sets</span>
+                  <span>{Math.round(w.totalVolume)} kg</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10 text-surface-500">No workouts tracked in the last week. Log one in the Workouts section to see your splits here.</div>
+        )}
+      </div>
     </div>
   );
 };

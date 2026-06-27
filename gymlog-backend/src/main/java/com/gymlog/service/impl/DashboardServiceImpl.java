@@ -2,6 +2,7 @@ package com.gymlog.service.impl;
 
 import com.gymlog.dto.response.*;
 import com.gymlog.entity.User;
+import com.gymlog.entity.Workout;
 import com.gymlog.enums.GoalStatus;
 import com.gymlog.enums.WorkoutStatus;
 import com.gymlog.exception.ResourceNotFoundException;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 
 @Slf4j
@@ -80,6 +82,12 @@ public class DashboardServiceImpl {
         List<GoalResponse> recentGoals = goalService.getActiveGoals(email);
         if (recentGoals.size() > 3) recentGoals = recentGoals.subList(0, 3);
 
+        List<WorkoutResponse> recentWorkouts = workoutRepository.findByUserIdAndWorkoutDateBetween(user.getId(), weekStart, today).stream()
+                .sorted(Comparator.comparing(Workout::getWorkoutDate).reversed())
+                .limit(6)
+                .map(this::mapToResponse)
+                .toList();
+
         // Recent PRs
         List<PersonalRecordResponse> recentPRs = personalRecordRepository.findByUserIdOrderByAchievedDateDesc(user.getId())
                 .stream()
@@ -113,7 +121,56 @@ public class DashboardServiceImpl {
                 .activeGoals(activeGoals)
                 .completedGoals(completedGoals)
                 .recentGoals(recentGoals)
+                .recentWorkouts(recentWorkouts)
                 .recentPRs(recentPRs)
+                .build();
+    }
+
+    private WorkoutResponse mapToResponse(Workout workout) {
+        List<WorkoutExerciseResponse> exerciseResponses = workout.getExercises().stream()
+                .map(we -> WorkoutExerciseResponse.builder()
+                        .id(we.getId())
+                        .exerciseId(we.getExercise().getId())
+                        .exerciseName(we.getExercise().getName())
+                        .muscleGroup(we.getExercise().getMuscleGroup())
+                        .orderIndex(we.getOrderIndex())
+                        .notes(we.getNotes())
+                        .sets(we.getSets().stream()
+                                .map(s -> WorkoutSetResponse.builder()
+                                        .id(s.getId())
+                                        .setNumber(s.getSetNumber())
+                                        .reps(s.getReps())
+                                        .weight(s.getWeight())
+                                        .durationSeconds(s.getDurationSeconds())
+                                        .isWarmup(s.getIsWarmup())
+                                        .completed(s.getCompleted())
+                                        .build())
+                                .toList())
+                        .build())
+                .toList();
+
+        int totalSets = exerciseResponses.stream()
+                .mapToInt(e -> e.getSets() != null ? e.getSets().size() : 0)
+                .sum();
+
+        double totalVolume = workout.getExercises().stream()
+                .flatMap(we -> we.getSets().stream())
+                .filter(s -> s.getWeight() != null && s.getReps() != null)
+                .mapToDouble(s -> s.getWeight() * s.getReps())
+                .sum();
+
+        return WorkoutResponse.builder()
+                .id(workout.getId())
+                .name(workout.getName())
+                .notes(workout.getNotes())
+                .workoutDate(workout.getWorkoutDate())
+                .durationMinutes(workout.getDurationMinutes())
+                .status(workout.getStatus())
+                .exercises(exerciseResponses)
+                .createdAt(workout.getCreatedAt())
+                .totalExercises(exerciseResponses.size())
+                .totalSets(totalSets)
+                .totalVolume(totalVolume)
                 .build();
     }
 

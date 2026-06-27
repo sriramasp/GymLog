@@ -38,6 +38,7 @@ public class DashboardResponse {
     private int activeGoals;
     private int completedGoals;
     private List<GoalResponse> recentGoals;
+    private List<WorkoutResponse> recentWorkouts;
 
     // Recent PRs
     private List<PersonalRecordResponse> recentPRs;

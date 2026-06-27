@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
@@ -27,4 +28,6 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
     Page<Exercise> findAllAccessible(@Param("userId") Long userId, Pageable pageable);
 
     List<Exercise> findByMuscleGroup(String muscleGroup);
+
+    Optional<Exercise> findByName(String name);
 }

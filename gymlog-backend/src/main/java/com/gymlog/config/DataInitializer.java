@@ -21,6 +21,10 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final ExerciseCategoryRepository categoryRepository;
     private final ExerciseRepository exerciseRepository;
+    private final WorkoutRepository workoutRepository;
+    private final NutritionLogRepository nutritionLogRepository;
+    private final GoalRepository goalRepository;
+    private final PersonalRecordRepository personalRecordRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -32,12 +36,16 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         log.info("Initializing seed data...");
-        seedUsers();
+        User demo = seedUsers();
         seedExercises();
+        seedDemoWorkouts(demo);
+        seedDemoNutrition(demo);
+        seedDemoGoals(demo);
+        seedDemoPersonalRecords(demo);
         log.info("Seed data initialized successfully!");
     }
 
-    private void seedUsers() {
+    private User seedUsers() {
         User admin = User.builder()
                 .email("admin@gymlog.com")
                 .password(passwordEncoder.encode("Admin@123"))
@@ -62,6 +70,7 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         userRepository.save(demo);
         log.info("Seeded 2 users (admin + demo)");
+        return demo;
     }
 
     private void seedExercises() {
@@ -140,15 +149,164 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Seeded {} exercises across {} categories", exerciseRepository.count(), categoryRepository.count());
     }
 
+    private void seedDemoWorkouts(User demo) {
+        Exercise benchPress = exerciseRepository.findByName("Barbell Bench Press").orElseThrow();
+        Exercise inclinePress = exerciseRepository.findByName("Incline Dumbbell Press").orElseThrow();
+        Exercise skullCrushers = exerciseRepository.findByName("Skull Crushers").orElseThrow();
+        Exercise barbellCurl = exerciseRepository.findByName("Barbell Curl").orElseThrow();
+        Exercise deadlift = exerciseRepository.findByName("Deadlift").orElseThrow();
+        Exercise pullups = exerciseRepository.findByName("Pull-Ups").orElseThrow();
+
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1);
+
+        Workout chestTriceps = Workout.builder()
+                .user(demo)
+                .name("Chest + Triceps")
+                .notes("Heavy compound chest and triceps day")
+                .workoutDate(monday)
+                .durationMinutes(90)
+                .status(WorkoutStatus.COMPLETED)
+                .exercises(List.of(
+                        createWorkoutExercise(null, benchPress, List.of(
+                                createWorkoutSet(null, 1, 8, 90.0, false, true),
+                                createWorkoutSet(null, 2, 8, 90.0, false, true),
+                                createWorkoutSet(null, 3, 6, 95.0, false, true)
+                        )),
+                        createWorkoutExercise(null, inclinePress, List.of(
+                                createWorkoutSet(null, 1, 8, 60.0, false, true),
+                                createWorkoutSet(null, 2, 8, 62.5, false, true)
+                        )),
+                        createWorkoutExercise(null, skullCrushers, List.of(
+                                createWorkoutSet(null, 1, 10, 40.0, false, true),
+                                createWorkoutSet(null, 2, 10, 42.5, false, true)
+                        ))
+                ))
+                .build();
+        chestTriceps.getExercises().forEach(ex -> ex.setWorkout(chestTriceps));
+        chestTriceps.getExercises().forEach(ex -> ex.getSets().forEach(set -> set.setWorkoutExercise(ex)));
+        workoutRepository.save(chestTriceps);
+
+        Workout backBiceps = Workout.builder()
+                .user(demo)
+                .name("Back + Biceps")
+                .notes("Pull day with focus on width and arm strength")
+                .workoutDate(monday.plusDays(1))
+                .durationMinutes(80)
+                .status(WorkoutStatus.COMPLETED)
+                .exercises(List.of(
+                        createWorkoutExercise(null, deadlift, List.of(
+                                createWorkoutSet(null, 1, 5, 140.0, false, true),
+                                createWorkoutSet(null, 2, 5, 145.0, false, true)
+                        )),
+                        createWorkoutExercise(null, pullups, List.of(
+                                createWorkoutSet(null, 1, 8, null, false, true),
+                                createWorkoutSet(null, 2, 7, null, false, true)
+                        )),
+                        createWorkoutExercise(null, barbellCurl, List.of(
+                                createWorkoutSet(null, 1, 12, 25.0, false, true),
+                                createWorkoutSet(null, 2, 12, 27.5, false, true)
+                        ))
+                ))
+                .build();
+        backBiceps.getExercises().forEach(ex -> ex.setWorkout(backBiceps));
+        backBiceps.getExercises().forEach(ex -> ex.getSets().forEach(set -> set.setWorkoutExercise(ex)));
+        workoutRepository.save(backBiceps);
+    }
+
+    private void seedDemoNutrition(User demo) {
+        LocalDate today = LocalDate.now();
+        nutritionLogRepository.save(NutritionLog.builder()
+                .user(demo)
+                .foodName("Oatmeal with berries")
+                .calories(420.0)
+                .protein(18.0)
+                .carbs(58.0)
+                .fat(10.0)
+                .mealType(MealType.BREAKFAST)
+                .logDate(today)
+                .build());
+        nutritionLogRepository.save(NutritionLog.builder()
+                .user(demo)
+                .foodName("Chicken breast and rice")
+                .calories(610.0)
+                .protein(55.0)
+                .carbs(65.0)
+                .fat(15.0)
+                .mealType(MealType.LUNCH)
+                .logDate(today)
+                .build());
+        nutritionLogRepository.save(NutritionLog.builder()
+                .user(demo)
+                .foodName("Greek yogurt and almonds")
+                .calories(320.0)
+                .protein(22.0)
+                .carbs(22.0)
+                .fat(15.0)
+                .mealType(MealType.SNACK)
+                .logDate(today)
+                .build());
+    }
+
+    private void seedDemoGoals(User demo) {
+        goalRepository.save(Goal.builder()
+                .user(demo)
+                .goalType(GoalType.STRENGTH)
+                .title("Increase bench press")
+                .description("Hit a 100kg bench press for 5 reps.")
+                .targetValue(100.0)
+                .currentValue(85.0)
+                .unit("kg")
+                .startDate(LocalDate.now().minusWeeks(2))
+                .targetDate(LocalDate.now().plusWeeks(6))
+                .status(GoalStatus.ACTIVE)
+                .build());
+    }
+
+    private void seedDemoPersonalRecords(User demo) {
+        Exercise bench = exerciseRepository.findByName("Barbell Bench Press").orElseThrow();
+        personalRecordRepository.save(PersonalRecord.builder()
+                .user(demo)
+                .exercise(bench)
+                .maxWeight(95.0)
+                .maxReps(5)
+                .maxVolume(475.0)
+                .achievedDate(LocalDate.now().minusDays(5))
+                .build());
+    }
+
+    private WorkoutExercise createWorkoutExercise(Workout workout, Exercise exercise, List<WorkoutSet> sets) {
+        WorkoutExercise workoutExercise = WorkoutExercise.builder()
+                .workout(workout)
+                .exercise(exercise)
+                .orderIndex(null)
+                .notes(null)
+                .sets(sets)
+                .build();
+        return workoutExercise;
+    }
+
+    private WorkoutSet createWorkoutSet(WorkoutExercise workoutExercise, int setNumber, Integer reps, Double weight, Boolean isWarmup, Boolean completed) {
+        return WorkoutSet.builder()
+                .workoutExercise(workoutExercise)
+                .setNumber(setNumber)
+                .reps(reps)
+                .weight(weight)
+                .durationSeconds(null)
+                .isWarmup(isWarmup)
+                .completed(completed)
+                .build();
+    }
+
     private ExerciseCategory saveCategory(String name, String description, String icon) {
         return categoryRepository.save(ExerciseCategory.builder()
                 .name(name).description(description).icon(icon).build());
     }
 
-    private void saveExercise(String name, String description, String instructions,
+    private Exercise saveExercise(String name, String description, String instructions,
                                Difficulty difficulty, String muscleGroup, String equipment,
                                ExerciseCategory category) {
-        exerciseRepository.save(Exercise.builder()
+        return exerciseRepository.save(Exercise.builder()
                 .name(name).description(description).instructions(instructions)
                 .difficulty(difficulty).muscleGroup(muscleGroup).equipment(equipment)
                 .category(category).isCustom(false).build());

@@ -18,10 +18,11 @@ const ExercisesPage = () => {
   const handleSearch = async (q) => {
     setSearch(q);
     setSelectedCat(null);
-    if (q.length > 1) {
-      const res = await exerciseAPI.search(q);
+    const trimmed = q.trim();
+    if (trimmed.length > 0) {
+      const res = await exerciseAPI.search(trimmed);
       setExercises(res.data.content);
-    } else if (q.length === 0) {
+    } else {
       const res = await exerciseAPI.getAll(0, 100);
       setExercises(res.data.content);
     }
